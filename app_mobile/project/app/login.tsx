@@ -1,14 +1,14 @@
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
-import { useState } from 'react';
-import { useAuthStore } from '../store/auth'; // Importation du store
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from '../store/auth';
 import { router } from 'expo-router';
 
-// Définition du type pour userInfo
 type UserInfo = {
   email: string;
   password: string;
   user?: {
-    name: string; // ou tout autre champ lié à l'utilisateur
+    name: string;
   };
   token?: string;
 };
@@ -17,28 +17,42 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null); // Initialisation avec le type UserInfo ou null
-  const [successMessage, setSuccessMessage] = useState(''); // État pour afficher le message de succès
-  const login = useAuthStore((state) => state.login); // Accéder à la fonction login du store
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const login = useAuthStore((state) => state.login);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem('userToken');
+        if (storedToken) {
+          const storedUser = JSON.parse(await AsyncStorage.getItem('userInfo') || '{}');
+          useAuthStore.setState({ user: storedUser, token: storedToken });
+          setUserInfo({ email: storedUser.email, password: '', user: storedUser, token: storedToken });
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement du token:', error);
+      }
+    };
+    loadToken();
+  }, []);
 
   const handleLogin = async () => {
     try {
-      console.log('Tentative de connexion avec les données suivantes :');
-      console.log('Email:', email);
-      console.log('Mot de passe:', password);
-  
+      console.log('Tentative de connexion avec :', email, password);
       setUserInfo({ email, password, user: undefined, token: undefined });
-  
-      // Appel de la fonction login depuis le store
+
       await login(email, password);
-      
-      // Utiliser un effet pour mettre à jour l'interface après la connexion
+
       setSuccessMessage('Connexion réussie !');
       const user = useAuthStore.getState().user;
       const token = useAuthStore.getState().token;
-  
+
       if (user && token) {
         setUserInfo({ email, password, user, token });
+        await AsyncStorage.setItem('userToken', token);
+        await AsyncStorage.setItem('userInfo', JSON.stringify(user));
         router.push('/');
       } else {
         setError('Connexion échouée. Veuillez réessayer.');
@@ -48,14 +62,11 @@ export default function LoginScreen() {
       setError('Email ou mot de passe incorrect');
     }
   };
-  
-  
 
   return (
     <View style={styles.container}>
       <View style={styles.form}>
         <Text style={styles.title}>Connexion</Text>
-
         {error && <Text style={styles.error}>{error}</Text>}
         {successMessage && <Text style={styles.success}>{successMessage}</Text>}
 
@@ -86,28 +97,9 @@ export default function LoginScreen() {
           <Text style={styles.buttonText}>Se connecter</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.linkButton}
-          onPress={() => router.push('/register')}
-        >
-          <Text style={styles.linkText}>
-            Pas encore de compte ? S'inscrire
-          </Text>
+        <Pressable style={styles.linkButton} onPress={() => router.push('/register')}>
+          <Text style={styles.linkText}>Pas encore de compte ? S'inscrire</Text>
         </Pressable>
-
-        {userInfo && (
-          <View style={styles.userInfoContainer}>
-            <Text style={styles.userInfoText}>Données envoyées :</Text>
-            <Text style={styles.userInfoText}>Email: {userInfo.email}</Text>
-            <Text style={styles.userInfoText}>Mot de passe: {userInfo.password}</Text>
-            {userInfo.user && (
-              <>
-                <Text style={styles.userInfoText}>Utilisateur connecté : {userInfo.user.name}</Text>
-                <Text style={styles.userInfoText}>Token : {userInfo.token}</Text>
-              </>
-            )}
-          </View>
-        )}
       </View>
     </View>
   );
@@ -130,19 +122,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontFamily: 'Poppins-Bold',
     fontSize: 24,
     color: '#1F2937',
     marginBottom: 24,
   },
   error: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 14,
     color: '#FF4B55',
     marginBottom: 16,
   },
   success: {
-    fontFamily: 'Poppins-Regular',
     fontSize: 14,
     color: '#4CAF50',
     marginBottom: 16,
@@ -151,7 +140,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontFamily: 'Poppins-Medium',
     fontSize: 14,
     color: '#1F2937',
     marginBottom: 8,
@@ -160,7 +148,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     padding: 12,
     borderRadius: 8,
-    fontFamily: 'Poppins-Regular',
     fontSize: 16,
   },
   button: {
@@ -171,7 +158,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonText: {
-    fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
   },
@@ -180,19 +166,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   linkText: {
-    fontFamily: 'Poppins-Medium',
     fontSize: 14,
     color: '#4B5563',
-  },
-  userInfoContainer: {
-    marginTop: 20,
-    backgroundColor: '#F3F4F6',
-    padding: 12,
-    borderRadius: 8,
-  },
-  userInfoText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#1F2937',
   },
 });
