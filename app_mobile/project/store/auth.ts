@@ -238,10 +238,15 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     logout: () => {
-      AsyncStorage.removeItem('authToken');
-      AsyncStorage.removeItem('authUser');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('userInfo');
+      localStorage.removeItem('userToken');
       set({ user: null, token: null });
       console.log('Déconnexion réussie');
+
+      // Optionnel: Redirection vers la page de login
+      window.location.href = '/login'; // Assurez-vous que cette ligne fonctionne dans votre environnement
     }
   };
 });

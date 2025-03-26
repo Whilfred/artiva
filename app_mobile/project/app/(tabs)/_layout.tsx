@@ -1,10 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Chrome as Home, ShoppingBag, Heart, User } from 'lucide-react-native';
 import { useWindowDimensions } from 'react-native';
+import { useAuthStore } from '../../store/auth'; // Import your authentication store
 
 export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
+  const { user } = useAuthStore(); // Get the user state from your auth store
 
   return (
     <Tabs
@@ -46,7 +48,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name={user ? "profile" : "login"} // Conditionally set the name based on authentication
         options={{
           title: 'Profil',
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,

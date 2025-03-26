@@ -22,11 +22,14 @@ export default function LoginScreen() {
   const login = useAuthStore((state) => state.login);
 
   useEffect(() => {
+    console.log('Vérification du token...');
     const loadToken = async () => {
       try {
         const storedToken = await AsyncStorage.getItem('userToken');
+        console.log('Token trouvé:', storedToken);
         if (storedToken) {
           const storedUser = JSON.parse(await AsyncStorage.getItem('userInfo') || '{}');
+          console.log('Utilisateur trouvé:', storedUser);
           useAuthStore.setState({ user: storedUser, token: storedToken });
           setUserInfo({ email: storedUser.email, password: '', user: storedUser, token: storedToken });
           router.push('/');
@@ -60,6 +63,21 @@ export default function LoginScreen() {
     } catch (err) {
       console.log('Erreur lors de la connexion :', err);
       setError('Email ou mot de passe incorrect');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      console.log('Déconnexion...');
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('userInfo');
+      useAuthStore.setState({ user: null, token: null });
+      setUserInfo(null);
+      setSuccessMessage('Déconnexion réussie !');
+      router.push('/login');
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion :', error);
+      setError('Erreur lors de la déconnexion');
     }
   };
 
@@ -99,6 +117,10 @@ export default function LoginScreen() {
 
         <Pressable style={styles.linkButton} onPress={() => router.push('/register')}>
           <Text style={styles.linkText}>Pas encore de compte ? S'inscrire</Text>
+        </Pressable>
+
+        <Pressable style={styles.linkButton} onPress={handleLogout}>
+          <Text style={styles.linkText}>Se déconnecter</Text>
         </Pressable>
       </View>
     </View>
