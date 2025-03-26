@@ -16,15 +16,20 @@ interface User {
   token?: string;
 }
 
+interface Product {
+  product_id: string;
+  name: string;
+  quantity: number;
+}
+
 interface Order {
+  _id: string;
   user_id: string;
   total: number;
   address: string;
-  products: {
-    product_id: string;
-    name: string;
-    quantity: number;
-  }[];
+  products: Product[];
+  createdAt: string; // Date de la commande
+  status: string; // Statut de la commande
 }
 
 interface AuthState {
@@ -32,11 +37,13 @@ interface AuthState {
   token: string | null;
   error: string | null;
   loading: boolean;
+  orders: Order[]; // Liste des commandes
   login: (email: string, password: string) => Promise<void>;
   register: (userData: object) => Promise<void>;
   placeOrder: (order: Order) => Promise<void>;
   logout: () => void;
   loadStoredAuth: () => Promise<void>;
+  loadUserOrders: () => Promise<void>; // Nouvelle fonction pour charger les commandes de l'utilisateur
 }
 
 export const useAuthStore = create<AuthState>((set) => {
@@ -88,7 +95,39 @@ export const useAuthStore = create<AuthState>((set) => {
       }
     }
   };
-  
+
+  const loadUserOrders = async () => {
+    const state = useAuthStore.getState();
+    if (!state.token || !state.user) {
+      set({ error: 'Utilisateur non authentifié' });
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/orders/${state.user._id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de la récupération des commandes');
+
+      const data = await response.json();
+      console.log('✅ Commandes récupérées:', data);
+
+      set({ orders: data.orders, error: null });
+    } catch (error: unknown) {
+      console.error('❌ Erreur lors de la récupération des commandes:', error);
+      if (error instanceof Error) {
+        set({ error: error.message });
+      } else {
+        set({ error: 'Erreur inconnue' });
+      }
+    }
+  };
+
   useEffect(() => {
     loadStoredAuth();
   }, []);
@@ -98,8 +137,10 @@ export const useAuthStore = create<AuthState>((set) => {
     token: null,
     error: null,
     loading: false,
+    orders: [], // Initialisation de la liste des commandes
 
     loadStoredAuth,
+    loadUserOrders, // Ajouter la fonction pour charger les commandes
 
     login: async (email, password) => {
       try {
@@ -113,7 +154,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
         const data = await response.json();
         set({ token: data.token, user: data.user, error: null });
-        
+
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('authUser', JSON.stringify(data.user));
         console.log('✅ Token stocké de manière persistante');
@@ -140,7 +181,7 @@ export const useAuthStore = create<AuthState>((set) => {
 
         const data = await response.json();
         set({ user: data.user, token: data.token, error: null });
-        
+
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('authUser', JSON.stringify(data.user));
       } catch (error: unknown) {
@@ -157,10 +198,17 @@ export const useAuthStore = create<AuthState>((set) => {
 
     placeOrder: async (order) => {
       const state = useAuthStore.getState();
-      if (!state.token) {
+      if (!state.token || !state.user) {
         set({ error: 'Veuillez vous connecter avant de commander.' });
         return;
       }
+
+      // Construire la commande avec les détails du produit
+      const orderDetails = {
+        ...order,
+        user_id: state.user._id, // Assurez-vous que l'id de l'utilisateur est inclus dans la commande
+        total: order.products.reduce((sum, product) => sum + product.quantity * 10, 0), // Exemple de calcul de total
+      };
 
       try {
         const response = await fetch('http://localhost:3000/api/orders', {
@@ -169,13 +217,16 @@ export const useAuthStore = create<AuthState>((set) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${state.token}`,
           },
-          body: JSON.stringify(order),
+          body: JSON.stringify(orderDetails),
         });
 
         if (!response.ok) throw new Error('Erreur lors de la commande');
 
         const data = await response.json();
         console.log('Commande passée avec succès:', data);
+
+        // Mettre à jour les commandes de l'utilisateur après la commande
+        loadUserOrders();
       } catch (error: unknown) {
         console.error('Erreur lors de la commande:', error);
         if (error instanceof Error) {

@@ -90,41 +90,112 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-app.post('/api/orders', authenticateToken, async (req, res) => {
-  const { user_id, total, address, products } = req.body.order;
-  if (!user_id || !total || !address || !products) {
-    return res.status(400).json({ error: 'Données manquantes pour la commande' });
-  }
+// Récupérer les commandes de l'utilisateur avec les noms des produits
+app.get('/api/orders', authenticateToken, async (req, res) => {
   try {
-    await pool.query('BEGIN');
-    const result = await pool.query(
-      'INSERT INTO orders (user_id, total, address, status) VALUES ($1, $2, $3, $4) RETURNING id',
-      [user_id, total, address, 'pending']
-    );
-    const orderId = result.rows[0].id;
-    console.log('✅ Commande créée avec succès, ID:', orderId);
+    const userId = req.user.userId;
+    console.log('✅ Récupération des commandes pour l\'utilisateur ID:', userId);
 
-    for (let product of products) {
-      const { product_id, quantity, name } = product;
-      let productResult = await pool.query('SELECT id, price FROM products WHERE id = $1', [product_id]);
-      if (productResult.rows.length === 0) {
-        const productPrice = product.price || 0;
-        await pool.query(
-          'INSERT INTO products (id, name, price) VALUES ($1, $2, $3)',
-          [product_id, name, productPrice]
-        );
-        productResult = await pool.query('SELECT id, price FROM products WHERE id = $1', [product_id]);
-      }
-      await pool.query(
-        'INSERT INTO order_items (order_id, product_id, quantity, name) VALUES ($1, $2, $3, $4)',
-        [orderId, product_id, quantity, name]
-      );
+    // Récupérer les commandes de l'utilisateur avec les produits associés
+    const { rows: orders } = await pool.query(
+      `SELECT o.id, o.total, o.address, o.status, o.created_at, 
+              oi.product_id, oi.quantity, oi.name as product_name, p.price
+       FROM orders o
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.user_id = $1
+       ORDER BY o.created_at DESC`,
+      [userId]
+    );
+
+    if (orders.length === 0) {
+      console.error('❌ Aucune commande trouvée pour cet utilisateur');
+      return res.status(404).json({ error: 'Aucune commande trouvée' });
     }
-    await pool.query('COMMIT');
-    res.status(201).json({ message: 'Commande créée avec succès' });
-  } catch (error) {
-    await pool.query('ROLLBACK');
-    console.error('❌ Erreur lors de la création de la commande:', error);
+
+    // Organiser les résultats sous forme de tableau avec chaque commande et ses produits
+    const formattedOrders = [];
+
+    // Utiliser une Map pour regrouper les commandes par ID
+    orders.forEach(order => {
+      const existingOrder = formattedOrders.find(o => o.orderId === order.id);
+
+      // Si la commande n'existe pas encore, on la crée
+      if (!existingOrder) {
+        formattedOrders.push({
+          orderId: order.id,
+          total: order.total,
+          address: order.address,
+          status: order.status,
+          createdAt: order.created_at, // Date et heure de la commande
+          products: [{
+            productId: order.product_id,
+            productName: order.product_name,
+            quantity: order.quantity,
+            price: order.price,
+          }],
+        });
+      } else {
+        // Si la commande existe déjà, on ajoute simplement le produit
+        existingOrder.products.push({
+          productId: order.product_id,
+          productName: order.product_name,
+          quantity: order.quantity,
+          price: order.price,
+        });
+      }
+    });
+
+    console.log('✅ Commandes récupérées:', formattedOrders);
+    res.json(formattedOrders);
+  } catch (err) {
+    console.error('❌ Erreur lors de la récupération des commandes:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+
+// Récupérer les commandes de l'utilisateur avec les noms des produits
+app.get('/api/orders', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log('✅ Récupération des commandes pour l\'utilisateur ID:', userId);
+
+    // Récupérer les commandes de l'utilisateur avec les produits associés
+    const { rows: orders } = await pool.query(
+      `SELECT o.id, o.total, o.address, o.status, o.created_at, 
+              oi.product_id, oi.quantity, oi.name as product_name, p.price
+       FROM orders o
+       LEFT JOIN order_items oi ON o.id = oi.order_id
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE o.user_id = $1
+       ORDER BY o.created_at DESC`,
+      [userId]
+    );
+
+    if (orders.length === 0) {
+      console.error('❌ Aucune commande trouvée pour cet utilisateur');
+      return res.status(404).json({ error: 'Aucune commande trouvée' });
+    }
+
+    const formattedOrders = orders.map(order => ({
+      orderId: order.id,
+      total: order.total,
+      address: order.address,
+      status: order.status,
+      createdAt: order.created_at, // Date et heure de la commande
+      products: orders.filter(o => o.orderId === order.id).map(o => ({
+        productId: o.product_id,
+        productName: o.product_name,
+        quantity: o.quantity,
+        price: o.price,
+      }))
+    }));
+
+    console.log('✅ Commandes récupérées:', formattedOrders);
+    res.json(formattedOrders);
+  } catch (err) {
+    console.error('❌ Erreur lors de la récupération des commandes:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
