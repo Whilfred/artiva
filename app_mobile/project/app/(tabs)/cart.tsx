@@ -26,14 +26,13 @@ export default function CartScreen() {
       console.error('Erreur: Aucun utilisateur ou panier vide');
       return;
     }
-  
+
     const orderData = {
       order: {
         user_id: user.id, // Utilisation correcte de user.id
         total: total(), // Calculer le total
         address: user.address || 'Adresse de livraison', // Adresse par défaut si non définie
         products: items.map((item) => {
-          console.log('Produit:', item); // Ajout du log pour voir les détails de chaque produit
           return {
             product_id: item.id,
             quantity: item.quantity,
@@ -43,9 +42,7 @@ export default function CartScreen() {
         }),
       },
     };
-  
-    console.log('Données de la commande envoyées:', JSON.stringify(orderData, null, 2)); // Log de l'objet final
-  
+
     try {
       const response = await fetch('http://localhost:3000/api/orders', {
         method: 'POST',
@@ -55,7 +52,7 @@ export default function CartScreen() {
         },
         body: JSON.stringify(orderData),
       });
-  
+
       if (response.ok) {
         const data = await response.json();
         console.log('Réponse du serveur:', data); // Log de la réponse du serveur
@@ -69,14 +66,12 @@ export default function CartScreen() {
       console.error('Erreur lors de la commande:', error);
     }
   };
-  
 
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>Votre panier est vide</Text>
       </View>
-
     );
   }
 
