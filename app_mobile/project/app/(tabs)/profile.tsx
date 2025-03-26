@@ -12,7 +12,30 @@ const menuItems = [
     subtitle: 'Voir l\'historique des commandes',
     route: '/orders'
   },
-  // autres items du menu...
+  {
+    icon: Heart,
+    title: 'Liste de souhaits',
+    subtitle: '12 produits enregistrés',
+    route: '/favorites'
+  },
+  {
+    icon: CreditCard,
+    title: 'Paiement',
+    subtitle: 'Gérer les moyens de paiement',
+    route: '/payment'
+  },
+  {
+    icon: Bell,
+    title: 'Notifications',
+    subtitle: 'Gérer les préférences',
+    route: '/notifications'
+  },
+  {
+    icon: Settings,
+    title: 'Paramètres',
+    subtitle: 'Modifier le profil',
+    route: '/settings'
+  },
 ];
 
 export default function ProfileScreen() {
