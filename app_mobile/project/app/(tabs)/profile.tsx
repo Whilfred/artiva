@@ -3,6 +3,7 @@ import { Settings, ShoppingBag, Heart, CreditCard, Bell, LogOut } from 'lucide-r
 import { useAuthStore } from '../../store/auth';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Assurez-vous d'importer AsyncStorage
 
 const menuItems = [
   {
@@ -38,48 +39,80 @@ const menuItems = [
 ];
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
-  const [loading, setLoading] = useState(true);  // Ajout d'un état de chargement
-  const [isMounted, setIsMounted] = useState(false);  // Assurer que le composant est monté
+  const { user, logout, loading } = useAuthStore();
+  const [isMounted, setIsMounted] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    setIsMounted(true); // Marquer que le composant est monté
-    return () => setIsMounted(false); // Nettoyer lors du démontage du composant
+    setIsMounted(true);
+    return () => setIsMounted(false);
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return; // Attendre que le composant soit monté
-
+    if (!isMounted || loading) return;
     if (user) {
-      setLoading(false);  // Une fois l'utilisateur validé, on met fin au chargement
+      console.log('Token utilisateur:', user?.token); // Log du token pour vérification
+      fetchUserData();
     } else {
-      router.replace('/login');  // Redirection vers la page de login si pas d'utilisateur
+      console.log('Utilisateur non connecté, redirection vers login');
+      router.replace('/login');
     }
-  }, [user, isMounted]);  // Le `useEffect` se déclenche dès que `user` change et quand le composant est monté
+  }, [user, isMounted, loading]);
 
-  if (loading) {
-    return null;  // Renvoyer null ou un écran de chargement pendant que l'on attend la vérification de l'utilisateur
-  }
+  const fetchUserData = async () => {
+    const storedToken = await AsyncStorage.getItem('authToken');
+    
+    if (!storedToken) {
+      console.error('❌ Token manquant !');
+      return;
+    }
+  
+    try {
+      const response = await fetch('http://localhost:3000/api/user', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${storedToken}`,
+        },
+      });
+  
+      if (!response.ok) throw new Error('Erreur lors de la récupération des données utilisateur');
+      const data = await response.json();
+      console.log('Données utilisateur récupérées:', data);
+      setUserData(data); // Mettez à jour l'état avec les données reçues
+    } catch (error) {
+      console.error('Erreur lors de la récupération des données utilisateur:', error);
+    }
+  };
 
   const handleLogout = () => {
+    console.log('Déconnexion en cours...');
     logout();
     router.replace('/login');
   };
+
+  if (loading) {
+    console.log('Chargement en cours...');
+    return <Text>Chargement...</Text>;
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500' }}
+            source={{ uri: userData?.profileImage || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500' }}
             style={styles.avatar}
           />
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+            <Text style={styles.name}>{userData?.full_name || 'Nom non disponible'}</Text>
+            <Text style={styles.email}>{userData?.email || 'Email non disponible'}</Text>
             <Text style={styles.location}>
-              {user.location ? `${user.location.district}, ${user.location.city}` : 'Localisation non disponible'}
+              {userData?.city || 'Ville non disponible'}
             </Text>
+            {/* Le district n'existe pas dans les données retournées par le backend */}
+            {/* <Text style={styles.location}>
+              {userData?.district || 'District non disponible'}
+            </Text> */}
           </View>
         </View>
       </View>
@@ -89,7 +122,10 @@ export default function ProfileScreen() {
           <Pressable 
             key={index}
             style={styles.menuItem}
-            onPress={() => router.push(item.route)}
+            onPress={() => {
+              console.log(`Naviguer vers: ${item.route}`);
+              router.push(item.route);
+            }}
           >
             <View style={styles.menuItemIcon}>
               <item.icon size={24} color="#1F2937" />
@@ -106,6 +142,14 @@ export default function ProfileScreen() {
         <LogOut size={24} color="#FF4B55" />
         <Text style={styles.logoutText}>Se déconnecter</Text>
       </Pressable>
+
+      {/* Cette section montre les données utilisateur récupérées */}
+      <View style={styles.userData}>
+        <Text style={styles.dataText}>Données utilisateur reçues:</Text>
+        <Text style={styles.dataText}>Nom: {userData?.full_name}</Text>
+        <Text style={styles.dataText}>Email: {userData?.email}</Text>
+        <Text style={styles.dataText}>Ville: {userData?.city}</Text>
+      </View>
     </ScrollView>
   );
 }
@@ -205,5 +249,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#FF4B55',
+  },
+  userData: {
+    marginTop: 24,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginHorizontal: 24,
+    marginBottom: 32,
+  },
+  dataText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

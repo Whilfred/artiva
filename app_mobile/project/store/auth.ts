@@ -13,6 +13,7 @@ interface User {
     city: string;
   };
   address?: string;
+  token?: string;
 }
 
 interface Order {
@@ -40,19 +41,54 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => {
   const loadStoredAuth = async () => {
+    set({ loading: true });
     try {
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('authUser');
-      
+  
       if (storedToken && storedUser) {
-        set({ token: storedToken, user: JSON.parse(storedUser) });
         console.log('🔄 Authentification restaurée depuis AsyncStorage');
+        set({ token: storedToken, user: JSON.parse(storedUser), loading: false });
+      } else {
+        console.log('🛑 Aucune donnée trouvée dans AsyncStorage, tentative de récupération depuis le backend');
+        if (!storedToken) {
+          console.error('❌ Token manquant');
+          set({ loading: false, error: 'Token manquant' });
+          return;
+        }
+  
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${storedToken}`,
+        };
+  
+        const response = await fetch('http://localhost:3000/api/user', {
+          method: 'GET',
+          headers,
+        });
+  
+        if (!response.ok) {
+          throw new Error('Échec de la récupération des données depuis le backend');
+        }
+  
+        const data = await response.json();
+        console.log('✅ Données récupérées depuis le backend:', data);
+  
+        await AsyncStorage.setItem('authToken', storedToken);
+        await AsyncStorage.setItem('authUser', JSON.stringify(data.user));
+  
+        set({ token: storedToken, user: data.user, loading: false });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Erreur lors du chargement des données d\'auth:', error);
+      if (error instanceof Error) {
+        set({ error: error.message || 'Erreur inconnue', loading: false });
+      } else {
+        set({ error: 'Erreur inconnue', loading: false });
+      }
     }
   };
-
+  
   useEffect(() => {
     loadStoredAuth();
   }, []);
@@ -81,9 +117,13 @@ export const useAuthStore = create<AuthState>((set) => {
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('authUser', JSON.stringify(data.user));
         console.log('✅ Token stocké de manière persistante');
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Erreur de connexion:', error);
-        set({ error: 'Erreur de connexion' });
+        if (error instanceof Error) {
+          set({ error: error.message });
+        } else {
+          set({ error: 'Erreur inconnue' });
+        }
       }
     },
 
@@ -103,9 +143,13 @@ export const useAuthStore = create<AuthState>((set) => {
         
         await AsyncStorage.setItem('authToken', data.token);
         await AsyncStorage.setItem('authUser', JSON.stringify(data.user));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Erreur lors de l\'inscription:', error);
-        set({ error: error instanceof Error ? error.message : 'Erreur inconnue' });
+        if (error instanceof Error) {
+          set({ error: error.message });
+        } else {
+          set({ error: 'Erreur inconnue' });
+        }
       } finally {
         set({ loading: false });
       }
@@ -119,27 +163,34 @@ export const useAuthStore = create<AuthState>((set) => {
       }
 
       try {
-        const response = await fetch("http://localhost:3000/api/orders", {
-          method: "POST",
+        const response = await fetch('http://localhost:3000/api/orders', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${state.token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`,
           },
           body: JSON.stringify(order),
         });
 
-        if (!response.ok) throw new Error('Erreur lors du traitement de la commande.');
-      } catch (error) {
+        if (!response.ok) throw new Error('Erreur lors de la commande');
+
+        const data = await response.json();
+        console.log('Commande passée avec succès:', data);
+      } catch (error: unknown) {
         console.error('Erreur lors de la commande:', error);
-        set({ error: 'Erreur lors de la commande.' });
+        if (error instanceof Error) {
+          set({ error: error.message });
+        } else {
+          set({ error: 'Erreur inconnue' });
+        }
       }
     },
 
-    logout: async () => {
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('authUser');
-      set({ token: null, user: null });
-      console.log('🚪 Déconnexion réussie, données effacées');
-    },
+    logout: () => {
+      AsyncStorage.removeItem('authToken');
+      AsyncStorage.removeItem('authUser');
+      set({ user: null, token: null });
+      console.log('Déconnexion réussie');
+    }
   };
 });

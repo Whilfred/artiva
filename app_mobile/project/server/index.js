@@ -34,7 +34,11 @@ const authenticateToken = (req, res, next) => {
 
   const token = authHeader.replace('Bearer ', '');
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Token invalide' });
+    if (err) {
+      console.error('❌ Erreur de vérification du token:', err);
+      return res.status(403).json({ error: 'Token invalide' });
+    }
+    console.log('✅ Token validé, utilisateur authentifié:', user);
     req.user = user;
     next();
   });
@@ -57,8 +61,10 @@ app.post('/api/register', async (req, res) => {
 
     const userId = result.rows[0].id;
     const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+    console.log('✅ Utilisateur enregistré avec succès, token généré:', token);
     res.json({ token, userId });
   } catch (err) {
+    console.error('❌ Erreur lors de l\'inscription:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -76,8 +82,10 @@ app.post('/api/login', async (req, res) => {
     if (!isPasswordValid) return res.status(400).json({ error: 'Mot de passe incorrect' });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    console.log('✅ Connexion réussie, token généré:', token);
     res.json({ message: 'Connexion réussie', token, user: { id: user.id, email: user.email, fullName: user.full_name } });
   } catch (err) {
+    console.error('❌ Erreur lors de la connexion:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -94,6 +102,8 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       [user_id, total, address, 'pending']
     );
     const orderId = result.rows[0].id;
+    console.log('✅ Commande créée avec succès, ID:', orderId);
+
     for (let product of products) {
       const { product_id, quantity, name } = product;
       let productResult = await pool.query('SELECT id, price FROM products WHERE id = $1', [product_id]);
@@ -114,6 +124,28 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     res.status(201).json({ message: 'Commande créée avec succès' });
   } catch (error) {
     await pool.query('ROLLBACK');
+    console.error('❌ Erreur lors de la création de la commande:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+app.get('/api/user', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log('✅ Récupération des données pour l\'utilisateur ID:', userId);
+
+    const { rows } = await pool.query('SELECT full_name, email, country, city FROM users WHERE id = $1', [userId]);
+    
+    if (rows.length === 0) {
+      console.error('❌ Utilisateur non trouvé');
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    const user = rows[0];
+    console.log('✅ Données utilisateur récupérées:', user);
+    res.json(user);
+  } catch (err) {
+    console.error('❌ Erreur lors de la récupération des données utilisateur:', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
