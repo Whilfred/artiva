@@ -137,37 +137,46 @@ export default function ProfileScreen() {
 
       {/* Modal pour afficher les commandes */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Mes commandes</Text>
-            {orders.length === 0 ? (
-              <Text style={styles.noOrdersText}>Vous n'avez aucune commande.</Text>
-            ) : (
-              orders.map((order) => (
-                <View key={order.orderId} style={styles.orderItem}>
-                  <Text style={styles.orderText}>Commande {order.orderId}</Text>
-                  <Text style={styles.orderText}>Total: {order.total} FCFA</Text>
-                  <Text style={styles.orderText}>Statut: {order.status}</Text>
-                  <Text style={styles.orderText}>Date: {formatDate(order.createdAt)}</Text>
-                  <Text style={styles.orderText}>Produits:</Text>
-                  {order.products && order.products.length > 0 ? (
-                    order.products.map((product, index) => (
-                      <Text key={index} style={styles.orderText}>- {product.productName}</Text>
-                    ))
-                  ) : (
-                    <Text style={styles.orderText}>Aucun produit disponible</Text>
-                  )}
-                </View>
-              ))
-            )}
-            <Button title="Fermer" onPress={toggleModal} />
-          </View>
-        </View>
-      </Modal>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Mes commandes</Text>
+      <ScrollView style={styles.ordersContainer}>
+        {orders.length === 0 ? (
+          <Text style={styles.noOrdersText}>Vous n'avez aucune commande.</Text>
+        ) : (
+          orders.map((order) => (
+            <View key={order.orderId} style={styles.orderItem}>
+              <View style={styles.orderHeader}>
+                <Text style={styles.orderNumber}>Commande {order.orderId}</Text>
+                <Text style={styles.orderDate}>{formatDate(order.createdAt)}</Text>
+              </View>
+              <View style={styles.orderProducts}>
+                <Text style={styles.productsTitle}>Produits:</Text>
+                {order.products && order.products.length > 0 ? (
+                  order.products.map((product, index) => (
+                    <Text key={index} style={styles.productItem}>- {product.productName}</Text>
+                  ))
+                ) : (
+                  <Text style={styles.productItem}>Aucun produit disponible</Text>
+                )}
+              </View>
+              <View style={styles.orderFooter}>
+                <Text style={styles.orderPrice}>Total: {order.total} FCFA</Text>
+                <Text style={styles.orderStatus}>Statut: {order.status}</Text>
+              </View>
+              <View style={styles.separator} />
+            </View>
+          ))
+        )}
+      </ScrollView>
+      <Button title="Fermer" onPress={toggleModal} />
+    </View>
+  </View>
+</Modal>
+
     </ScrollView>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: { padding: 24, paddingTop: 60, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
@@ -186,10 +195,20 @@ const styles = StyleSheet.create({
   logoutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEE2E2', marginHorizontal: 24, marginTop: 24, marginBottom: 32, padding: 16, borderRadius: 12, gap: 8 },
   logoutText: { fontFamily: 'Poppins-SemiBold', fontSize: 16, color: '#FF4B55' },
   modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 12, width: '80%' },
+  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 12, width: '80%', maxHeight: '80%' }, // Ajustez la hauteur du modal
   modalTitle: { fontFamily: 'Poppins-Bold', fontSize: 20, marginBottom: 16 },
-  orderItem: { marginBottom: 12 },
-  orderText: { fontFamily: 'Poppins-Regular', fontSize: 16, color: '#1F2937' },
-  noOrdersText: { fontFamily: 'Poppins-Regular', fontSize: 16, color: '#6B7280' },
+  ordersContainer: { maxHeight: '70%' }, // Assurez-vous que ce conteneur est défilable
+  orderItem: { marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  orderNumber: { fontFamily: 'Poppins-Bold', fontSize: 16, color: '#1F2937' },
+  orderDate: { fontFamily: 'Poppins-Regular', fontSize: 14, color: '#6B7280' },
+  orderProducts: { marginLeft: 8, marginBottom: 8 },
+  productsTitle: { fontFamily: 'Poppins-SemiBold', fontSize: 14, color: '#1F2937' },
+  productItem: { fontFamily: 'Poppins-Regular', fontSize: 14, color: '#6B7280' },
+  orderFooter: { marginTop: 8, flexDirection: 'row', justifyContent: 'space-between' },
+  orderPrice: { fontFamily: 'Poppins-SemiBold', fontSize: 16, color: '#4CAF50' },
+  orderStatus: { fontFamily: 'Poppins-Regular', fontSize: 14, color: '#FFB400' },
+  separator: { height: 1, backgroundColor: '#E5E7EB', marginTop: 12 },
+  noOrdersText: { fontFamily: 'Poppins-Regular', fontSize: 16, color: '#6B7280', textAlign: 'center' },
   errorText: { fontFamily: 'Poppins-Regular', fontSize: 16, color: '#FF4B55', textAlign: 'center', marginTop: 10 },
 });
