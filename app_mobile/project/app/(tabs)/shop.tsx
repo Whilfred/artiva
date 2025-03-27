@@ -260,34 +260,31 @@ export default function ShopScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
   header: {
-    padding: 16, // Réduit le padding pour ajuster l'espacement
-    paddingTop: 50, // Réduit le padding du haut pour remonter la section
+    padding: 24,
+    paddingTop: 60,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    position: 'relative', // Assure que la barre reste dans le flux normal
-    zIndex: 10,
   },
   title: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 24, // Réduit la taille du titre
+    fontSize: 28,
     color: '#1F2937',
-    marginBottom: 12, // Réduit la marge inférieure
+    marginBottom: 16,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F3F4F6',
-    padding: 10, // Réduit le padding pour un meilleur ajustement
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 12, // Ajuste l'espace sous la barre de recherche
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,

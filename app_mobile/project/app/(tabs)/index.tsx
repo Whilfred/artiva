@@ -13,21 +13,28 @@ import {
 import { Search, X } from 'lucide-react-native'; // Icônes pour la recherche et la fermeture
 import { useCartStore } from '../../store/cart'; // Utilisation de Zustand pour gérer le panier
 
+// Import des images locales
+import iphoneImage from '../../assets/images/Martistore_calavi/air_pod/image1.png';
+import macbookImage from '../../assets/images/Jordan_noir/image1.jpeg';
+// import robeImage from '../../assets/images/robe.png';
+// import chaussuresImage from '../../assets/images/chaussures.png';
+// import canapeImage from '../../assets/images/canape.png';
+
 // Catégories
 const categories = [
-  { id: 1, name: 'Électronique', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=500' },
-  { id: 2, name: 'Mode', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=500' },
-  { id: 3, name: 'Maison', image: 'https://images.unsplash.com/photo-1484101403633-562f891dc89a?w=500' },
-  { id: 4, name: 'Sport', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500' },
+  { id: 1, name: 'Électronique', image: require('../../assets/images/Adidas_blanc/image.jpeg') },
+  { id: 2, name: 'Mode', image: require('../../assets/images/Air_noir/image1.jpeg') },
+  // { id: 3, name: 'Maison', image: require('../../assets/images/maison.png') },
+  // { id: 4, name: 'Sport', image: require('../../assets/images/sport.png') },
 ];
 
 // Produits
 const featuredProducts = [
-  { id: 1, name: 'iPhone 15 Pro', price: '999 FCFA', categoryId: 1, image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=500' },
-  { id: 2, name: 'MacBook Air M2', price: '1299 FCFA', categoryId: 1, image: 'https://via.placeholder.com/300' },
-  { id: 3, name: 'Robe élégante', price: '49 FCFA', categoryId: 2, image: 'https://via.placeholder.com/300' },
-  { id: 4, name: 'Chaussures de sport', price: '89 FCFA', categoryId: 4, image: 'https://via.placeholder.com/300' },
-  { id: 5, name: 'Canapé confortable', price: '499 FCFA', categoryId: 3, image: 'https://via.placeholder.com/300' },
+  { id: 1, name: 'iPhone 15 Pro', price: '999 FCFA', categoryId: 1, image: iphoneImage },
+  { id: 2, name: 'MacBook Air M2', price: '1299 FCFA', categoryId: 1, image: macbookImage },
+  // { id: 3, name: 'Robe élégante', price: '49 FCFA', categoryId: 2, image: robeImage },
+  // { id: 4, name: 'Chaussures de sport', price: '89 FCFA', categoryId: 4, image: chaussuresImage },
+  // { id: 5, name: 'Canapé confortable', price: '499 FCFA', categoryId: 3, image: canapeImage },
 ];
 
 export default function HomeScreen() {
@@ -37,28 +44,24 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const addItem = useCartStore((state) => state.addItem); // Ajout d'article au panier via Zustand
+  const addItem = useCartStore((state) => state.addItem);
 
-  // Filtrage des produits
   const filteredProducts = selectedCategory
     ? featuredProducts.filter((product) => product.categoryId === selectedCategory.id)
     : featuredProducts.filter((product) =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-  // Gère l'ouverture de la modal
   const openModal = (product) => {
     setSelectedProduct(product);
     setModalVisible(true);
   };
 
-  // Gère la fermeture de la modal
   const closeModal = () => {
     setSelectedProduct(null);
     setModalVisible(false);
   };
 
-  // Ajoute un produit au panier
   const addToCart = (product) => {
     addItem({
       id: product.id,
@@ -77,7 +80,6 @@ export default function HomeScreen() {
         <Text style={styles.title}>Découvrez nos produits</Text>
       </View>
 
-      {/* Barre de recherche */}
       <View style={styles.searchContainer}>
         <Search size={20} color="#9CA3AF" />
         <TextInput
@@ -88,54 +90,32 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* Affichage des catégories */}
-      <Text style={styles.sectionTitle}>
-        {/* {selectedCategory ? selectedCategory.name : 'Catégories'} */}
-        Catégories
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-      >
-       
+      <Text style={styles.sectionTitle}>Catégories</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
         {categories.map((category) => (
-          
-          <Pressable
-          
-            key={category.id}
-            style={styles.categoryCard}
+          <Pressable 
+            key={category.id} 
+            style={styles.categoryCard} 
             onPress={() => {
               setSelectedCategory(category);
               setSearchQuery('');
             }}
           >
-            <Image
-              source={{ uri: category.image }}
-              style={styles.categoryImage}
-              resizeMode="cover" // Ajouté pour bien gérer l'affichage des images
-            />
-            
+            <Image source={category.image} style={styles.categoryImage} resizeMode="cover" />
             <Text style={styles.categoryName}>{category.name}</Text>
           </Pressable>
         ))}
       </ScrollView>
-      <Text style={styles.sectionTitle}>
-        Pour vous
-      </Text>
-      {/* Produits */}
+
+      <Text style={styles.sectionTitle}>Pour vous</Text>
       <View style={[styles.productsGrid, isTablet && styles.tabletGrid]}>
         {filteredProducts.map((product) => (
-          <Pressable
-            key={product.id}
-            style={[styles.productCard, isTablet && styles.tabletCard]}
+          <Pressable 
+            key={product.id} 
+            style={[styles.productCard, isTablet && styles.tabletCard]} 
             onPress={() => openModal(product)}
           >
-            <Image
-              source={{ uri: product.image }}
-              style={styles.productImage}
-              resizeMode="cover" // Ajouté pour bien gérer l'affichage des images
-            />
+            <Image source={product.image} style={styles.productImage} resizeMode="cover" />
             <View style={styles.productInfo}>
               <Text style={styles.productName}>{product.name}</Text>
               <Text style={styles.productPrice}>{product.price}</Text>
@@ -150,17 +130,20 @@ export default function HomeScreen() {
           {selectedProduct && (
             <>
               <Image
-                source={{ uri: selectedProduct.image }}
+                source={selectedProduct.image}
                 style={styles.modalImage}
-                resizeMode="cover" // Pour que l'image s'affiche correctement dans le modal
+                resizeMode="cover"
               />
               <Text style={styles.modalTitle}>{selectedProduct.name}</Text>
               <Text style={styles.modalPrice}>{selectedProduct.price}</Text>
-              <Pressable style={styles.addToCartButton} onPress={() => addToCart(selectedProduct)}>
+              <Pressable 
+                style={styles.addToCartButton} 
+                onPress={() => addToCart(selectedProduct)}
+              >
                 <Text style={styles.addToCartButtonText}>Ajouter au panier</Text>
               </Pressable>
               <Pressable style={styles.closeButton} onPress={closeModal}>
-                <X size={24} color="#532FB6FF" />
+                <X size={24} color="#FFFFFF" />
               </Pressable>
             </>
           )}
@@ -269,6 +252,7 @@ const styles = StyleSheet.create({
     color: '#1ABC9C',
     marginTop: 4,
   },
+  // Modal-related styles
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -291,7 +275,7 @@ const styles = StyleSheet.create({
   modalPrice: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 20,
-    color: '#FF4B55',
+    color: '#1ABC9C',
     marginVertical: 8,
     textAlign: 'center',
   },
@@ -301,6 +285,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    width: '100%',
   },
   addToCartButtonText: {
     fontFamily: 'Poppins-SemiBold',
@@ -314,5 +299,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4B55',
     padding: 10,
     borderRadius: 8,
+    width: '100%',
   },
 });
