@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     try {
-      const response = await fetch(`http://localhost:3000/api/orders/${user._id}`, {
+      const response = await fetch(`http://192.168.109.163:3000/api/orders/${user._id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       });
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch('http://192.168.109.163:3000/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -108,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   register: async (userData) => {
     set({ loading: true });
     try {
-      const response = await fetch('http://localhost:3000/api/users/register', {
+      const response = await fetch('http://192.168.109.163:3000/api/users/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
@@ -130,7 +130,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
     try {
-      const response = await fetch('http://localhost:3000/api/orders', {
+      const response = await fetch('http://192.168.109.163:3000/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...order, user_id: user._id }),

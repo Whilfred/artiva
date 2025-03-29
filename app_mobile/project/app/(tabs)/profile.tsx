@@ -65,7 +65,7 @@ export default function ProfileScreen() {
     const storedToken = await AsyncStorage.getItem('authToken');
     if (!storedToken) return;
     try {
-      const response = await fetch('http://localhost:3000/api/user', {
+      const response = await fetch('http://192.168.109.163:3000/api/user', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${storedToken}` },
       });
@@ -82,7 +82,7 @@ export default function ProfileScreen() {
     const storedToken = await AsyncStorage.getItem('authToken');
     if (!storedToken) return;
     try {
-      const response = await fetch('http://localhost:3000/api/orders', {
+      const response = await fetch('http://192.168.109.163:3000/api/orders', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${storedToken}` },
       });
